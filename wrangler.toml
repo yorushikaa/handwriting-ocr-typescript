@@ -1,0 +1,10 @@
+name = "handwriting-ocr"
+main = "src/index.js"
+compatibility_date = "2024-10-15"
+
+# CORS settings
+[vars]
+ALLOWED_ORIGINS = "*"
+
+# Google API key will be set as a secret
+# Run: wrangler secret put GOOGLE_API_KEY

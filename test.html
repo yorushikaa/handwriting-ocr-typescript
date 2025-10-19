@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Handwriting OCR Test - CJK/Arabic/Cyrillic</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', Arial, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 2.5rem;
+    }
+
+    .subtitle {
+      color: #666;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 1.1rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      margin-bottom: 20px;
+    }
+
+    .upload-zone {
+      border: 3px dashed #999;
+      border-radius: 8px;
+      padding: 60px 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: #fafafa;
+    }
+
+    .upload-zone:hover {
+      border-color: #666;
+      background: #f0f0f0;
+      transform: translateY(-2px);
+    }
+
+    .upload-zone.dragover {
+      background: #e8e8e8;
+      border-color: #666;
+      transform: scale(1.02);
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .upload-text {
+      color: #333;
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .upload-hint {
+      color: #888;
+      font-size: 0.95rem;
+    }
+
+    .preview-grid {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 300px;
+    }
+
+    .preview-item {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      max-width: 100%;
+    }
+
+    .preview-item img {
+      max-width: 100%;
+      max-height: 500px;
+      height: auto;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    .preview-item .close-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 25px;
+      height: 25px;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-item .close-btn:hover {
+      background: #000;
+    }
+
+    button {
+      background: #555;
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 20px;
+      width: 100%;
+    }
+
+    button:hover:not(:disabled) {
+      background: #333;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #555;
+      font-size: 1.2rem;
+    }
+
+    .spinner {
+      border: 4px solid #e0e0e0;
+      border-top: 4px solid #555;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .result-box {
+      background: #fafafa;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      padding: 25px;
+      margin-top: 20px;
+      font-family: 'Noto Sans', 'Microsoft YaHei', 'Arial Unicode MS', sans-serif;
+      font-size: 18px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .result-header h2 {
+      color: #333;
+      margin: 0;
+    }
+
+    .copy-btn {
+      background: #555;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      width: auto;
+      margin: 0;
+    }
+
+    .copy-btn:hover {
+      background: #333;
+    }
+
+    .info-box {
+      background: #f0f0f0;
+      border-left: 4px solid #888;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 4px;
+    }
+
+    .info-box strong {
+      color: #333;
+    }
+
+    .worker-url-box {
+      background: #f9f9f9;
+      border: 2px solid #ccc;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .worker-url-box input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .examples {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 8px;
+    }
+
+    .examples h3 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .examples ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .examples li {
+      padding: 5px 0;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="worker-url-box">
+        <strong>Worker URL</strong>
+        <input type="text" id="workerUrl" placeholder="https://your-worker.your-subdomain.workers.dev" value="">
+        <p style="margin-top: 8px; font-size: 0.9rem; color: #666;">
+          After deploying with <code>wrangler deploy</code>, paste your worker URL here
+        </p>
+      </div>
+
+      <div class="upload-zone" id="dropZone">
+        <div id="uploadPrompt">
+          <div class="upload-text">Click to upload or drag & drop</div>
+          <div class="upload-hint">Supports: PNG, JPG, JPEG - Handwritten text in any language</div>
+        </div>
+        <div id="previewGrid" style="display: none; padding: 20px;"></div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*">
+
+      <button id="processBtn" style="display:none;">Process Handwriting</button>
+    </div>
+
+    <div id="loadingCard" class="card" style="display:none;">
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>Processing handwritten text...</p>
+      </div>
+    </div>
+
+    <div id="resultCard" class="card" style="display:none;">
+      <div class="result-header">
+        <h2>Results</h2>
+        <button class="copy-btn" onclick="copyToClipboard()">Copy Text</button>
+      </div>
+
+      <!-- Annotated Image -->
+      <div id="annotatedImageContainer" style="margin-bottom: 20px;">
+        <h3 style="color: #333; margin-bottom: 10px;">Annotated Image</h3>
+        <div style="position: relative; display: inline-block; width: 100%; max-width: 100%;">
+          <img id="originalImage" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+          <svg id="textOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></svg>
+        </div>
+      </div>
+
+      <!-- Image Transcript -->
+      <div>
+        <h3 style="color: #333; margin-bottom: 10px;">Image Transcript</h3>
+        <div id="output" class="result-box"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let selectedFiles = [];
+
+    // Load saved worker URL
+    const savedUrl = localStorage.getItem('workerUrl');
+    if (savedUrl) {
+      document.getElementById('workerUrl').value = savedUrl;
+    }
+
+    // Save worker URL on change
+    document.getElementById('workerUrl').addEventListener('input', (e) => {
+      localStorage.setItem('workerUrl', e.target.value);
+    });
+
+    // Upload zone interactions
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const uploadPrompt = document.getElementById('uploadPrompt');
+    const previewGrid = document.getElementById('previewGrid');
+
+    dropZone.onclick = (e) => {
+      // Only allow clicking upload zone when no file is selected
+      if (selectedFiles.length === 0) {
+        fileInput.click();
+      }
+    };
+
+    dropZone.ondragover = (e) => {
+      e.preventDefault();
+      if (selectedFiles.length === 0) {
+        dropZone.classList.add('dragover');
+      }
+    };
+
+    dropZone.ondragleave = () => {
+      dropZone.classList.remove('dragover');
+    };
+
+    dropZone.ondrop = (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (selectedFiles.length === 0) {
+        handleFiles(Array.from(e.dataTransfer.files));
+      }
+    };
+
+    fileInput.onchange = (e) => {
+      handleFiles(Array.from(e.target.files));
+    };
+
+    function handleFiles(files) {
+      // Only allow one file at a time
+      if (selectedFiles.length > 0) {
+        return;
+      }
+
+      const imageFiles = files.filter(f => f.type.startsWith('image/'));
+
+      if (imageFiles.length === 0) {
+        alert('Please select image files');
+        return;
+      }
+
+      // Only take the first file
+      const file = imageFiles[0];
+      selectedFiles.push(file);
+      addPreview(file, 0);
+
+      updateUI();
+    }
+
+    function addPreview(file, index) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const previewItem = document.createElement('div');
+        previewItem.className = 'preview-item';
+        previewItem.dataset.index = index;
+        previewItem.innerHTML = `
+          <img src="${e.target.result}" alt="Preview">
+          <button class="close-btn">×</button>
+        `;
+
+        // Add event listener to close button to prevent propagation
+        const closeBtn = previewItem.querySelector('.close-btn');
+        closeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          removeFile(index);
+        });
+
+        previewGrid.appendChild(previewItem);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeFile(index) {
+      // Clear all files and preview
+      selectedFiles = [];
+      previewGrid.innerHTML = '';
+
+      // Reset file input
+      fileInput.value = '';
+
+      updateUI();
+    }
+
+    function updateUI() {
+      if (selectedFiles.length > 0) {
+        uploadPrompt.style.display = 'none';
+        previewGrid.style.display = 'grid';
+        previewGrid.className = 'preview-grid';
+        document.getElementById('processBtn').style.display = 'block';
+      } else {
+        uploadPrompt.style.display = 'block';
+        previewGrid.style.display = 'none';
+        document.getElementById('processBtn').style.display = 'none';
+        previewGrid.innerHTML = '';
+      }
+    }
+
+    document.getElementById('processBtn').onclick = async () => {
+      const workerUrl = document.getElementById('workerUrl').value.trim();
+
+      if (!workerUrl) {
+        alert('Please enter your Cloudflare Worker URL first');
+        document.getElementById('workerUrl').focus();
+        return;
+      }
+
+      if (selectedFiles.length === 0) return;
+
+      // Show loading
+      document.getElementById('loadingCard').style.display = 'block';
+      document.getElementById('resultCard').style.display = 'none';
+
+      try {
+        const results = [];
+
+        // Process each image
+        for (let i = 0; i < selectedFiles.length; i++) {
+          const file = selectedFiles[i];
+
+          const formData = new FormData();
+          formData.append('image', file);
+
+          console.log(`Processing image ${i + 1}/${selectedFiles.length}:`, file.name);
+
+          const response = await fetch(workerUrl, {
+            method: 'POST',
+            body: formData
+          });
+
+          const data = await response.json();
+          console.log('Response:', data);
+
+          if (data.success) {
+            results.push({
+              file: file,
+              data: data
+            });
+          } else {
+            console.error('Error processing', file.name, ':', data.error);
+          }
+        }
+
+        if (results.length > 0) {
+          // Display result
+          const result = results[0];
+
+          // Display typed text
+          document.getElementById('output').textContent = result.data.typed_text;
+
+          // Display annotated image
+          if (result.data.annotated_image && result.data.annotated_image.svg) {
+            const img = document.getElementById('originalImage');
+            const svg = document.getElementById('textOverlay');
+
+            // Load original image
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              img.src = e.target.result;
+
+              // Wait for image to load to get dimensions
+              img.onload = () => {
+                // Set SVG viewBox to match image dimensions
+                svg.setAttribute('viewBox', `0 0 ${img.naturalWidth} ${img.naturalHeight}`);
+                svg.setAttribute('preserveAspectRatio', 'none');
+
+                // Insert SVG overlay elements
+                svg.innerHTML = result.data.annotated_image.svg;
+              };
+            };
+            reader.readAsDataURL(result.file);
+          }
+
+          document.getElementById('resultCard').style.display = 'block';
+        } else {
+          alert('Error: Failed to process image');
+        }
+      } catch (error) {
+        alert('Network Error: ' + error.message);
+        console.error('Error:', error);
+      } finally {
+        document.getElementById('loadingCard').style.display = 'none';
+      }
+    };
+
+    function copyToClipboard() {
+      const text = document.getElementById('output').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Copied to clipboard!');
+      }).catch(err => {
+        alert('Failed to copy: ' + err);
+      });
+    }
+  </script>
+</body>
+</html>
